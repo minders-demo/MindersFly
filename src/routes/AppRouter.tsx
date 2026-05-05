@@ -55,7 +55,7 @@ import { PlaceholderPage } from '../pages/PlaceholderPage';
 
 export const AppRouter = () => {
     return (
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
             <RouteTracker />
             <Routes>
                 <Route element={<MainLayout />}>
@@ -100,8 +100,8 @@ export const AppRouter = () => {
                     <Route path="/my-trips/upgrade/:bookingId" element={<UpgradePage />} />
 
                     {/* Check In */}
-                    <Route path="/check-in" element={<CheckInPassengerPage />} /> {/* simplified directly to Pax */}
-                    <Route path="/check-in/:bookingId" element={<CheckInPassengerPage />} /> {/* Route from trips */}
+                    <Route path="/check-in" element={<CheckInPassengerPage />} />
+                    <Route path="/check-in/:bookingId" element={<CheckInPassengerPage />} />
                     <Route path="/check-in/passenger" element={<CheckInPassengerPage />} />
                     <Route path="/check-in/seats" element={<PlaceholderPage title="Check In: Asientos" description="Confirmación o cambio de asientos en check in" />} />
                     <Route path="/check-in/boarding-pass" element={<BoardingPassPage />} />
@@ -113,21 +113,21 @@ export const AppRouter = () => {
                     <Route path="/travel/packages/results" element={<PackageResultsPage />} />
                     <Route path="/travel/packages/detail/:packageId" element={<PackageDetailPage />} />
                     <Route path="/travel/packages/checkout" element={<CheckoutPaymentPage />} />
-                    
+
                     <Route path="/travel/hotels/search" element={<AccommodationsResultsPage />} />
                     <Route path="/travel/hotels/results" element={<AccommodationsResultsPage />} />
                     <Route path="/travel/hotels/detail/:hotelId" element={<AccommodationDetailPage />} />
                     <Route path="/travel/hotels/checkout" element={<CheckoutPaymentPage />} />
-                    
+
                     <Route path="/travel/cars/search" element={<CarsResultsPage />} />
                     <Route path="/travel/cars/results" element={<CarsResultsPage />} />
                     <Route path="/travel/cars/detail/:carId" element={<CarsResultsPage />} />
                     <Route path="/travel/cars/checkout" element={<CheckoutPaymentPage />} />
-                    
+
                     <Route path="/travel/assistance/search" element={<TravelGenericResultsPage type="assistance" />} />
                     <Route path="/travel/assistance/plans" element={<TravelGenericResultsPage type="assistance" />} />
                     <Route path="/travel/assistance/checkout" element={<CheckoutPaymentPage />} />
-                    
+
                     <Route path="/travel/esim" element={<PlaceholderPage title="eSIM" description="Compra de eSIM" />} />
                     <Route path="/travel/transfers" element={<PlaceholderPage title="Transfers" description="Reserva de traslados" />} />
                     <Route path="/travel/activities" element={<PlaceholderPage title="Actividades" description="Reserva de tours" />} />
