@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Flight } from '../types/flight'; // We will create this
+import { Flight } from '../types/flight';
 
 export interface SearchConfig {
     origin: string;
@@ -31,6 +31,7 @@ export interface BookingState {
     subtotal?: number;
     fees?: number;
     bagsTotal?: number;
+    productCategory?: 'flight' | 'hotel' | 'package' | 'car' | 'assistance' | string;
 }
 
 interface BookingContextType {
@@ -55,13 +56,13 @@ const defaultBooking: BookingState = {
     currency: 'USD',
     subtotal: 0,
     fees: 0,
-    bagsTotal: 0
+    bagsTotal: 0,
 };
 
-export const BookingContext = createContext<BookingContextType>({ 
-    booking: defaultBooking, 
-    updateBooking: () => {}, 
-    clearBooking: () => {} 
+export const BookingContext = createContext<BookingContextType>({
+    booking: defaultBooking,
+    updateBooking: () => {},
+    clearBooking: () => {},
 });
 
 export const BookingProvider = ({ children }: { children: ReactNode }) => {
@@ -72,7 +73,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
         if (stored) {
             try {
                 setBookingState(JSON.parse(stored));
-            } catch(e) {}
+            } catch (e) {}
         }
     }, []);
 
