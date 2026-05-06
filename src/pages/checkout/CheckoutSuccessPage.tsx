@@ -1,19 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { trackEvent, trackRevenue } from '../../lib/amplitude';
-import { useMarket } from '../../context/AppContext';
+import { accumulateMiles, getMilesForCategory } from '../../lib/miles';
+import { useMarket, useUser } from '../../context/AppContext';
 import { useBooking } from '../../context/BookingContext';
 import { useNavigate } from 'react-router';
-import { CheckCircle, Download, ArrowRight } from 'lucide-react';
+import { CheckCircle, ArrowRight } from 'lucide-react';
 
 export const CheckoutSuccessPage = () => {
     const { booking, clearBooking } = useBooking();
     const { market } = useMarket();
+    const { user, setUser } = useUser();
     const navigate = useNavigate();
 
     const pnr = `MF${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const transactionId = `TXN-${Date.now()}`;
+
+    // Guard: evita doble acumulación con React 18 Strict Mode (double-invoke effects)
+    const accruedRef = useRef(false);
 
     useEffect(() => {
-
         trackRevenue({
             productId: booking.outboundFlight?.flightNumber || 'unknown',
             price: booking.totalAmount || 100,
@@ -23,12 +28,14 @@ export const CheckoutSuccessPage = () => {
                 pnr,
                 passengers: booking.passengers.length || 1,
                 market: market.market,
-                route: `${booking.searchConfig?.origin}-${booking.searchConfig?.destination}`
-            }
+                route: `${booking.searchConfig?.origin}-${booking.searchConfig?.destination}`,
+            },
         });
 
+        const productCategory = booking.productCategory || 'flight';
+
         trackEvent('Checkout Completed', {
-            transaction_id: `TXN-${Date.now()}`,
+            transaction_id: transactionId,
             pnr,
             total_passengers: booking.passengers.length || 1,
             currency: booking.currency || market.currency,
@@ -36,10 +43,34 @@ export const CheckoutSuccessPage = () => {
             price: booking.totalAmount || 100,
             quantity: 1,
             productId: booking.outboundFlight?.flightNumber || 'unknown',
-            product_category: 'flight'
+            product_category: productCategory,
         });
 
-        // Store to mock data so it appears in My Trips (simulated simple way)
+        // Acumulación automática de millas — una sola vez por confirmación
+        if (!accruedRef.current) {
+            accruedRef.current = true;
+            const milesAmount = getMilesForCategory(productCategory);
+            if (milesAmount > 0) {
+                const result = accumulateMiles({
+                    miles_amount: milesAmount,
+                    partner_origin: 'minders_fly',
+                    product_type: productCategory,
+                    product_category: productCategory,
+                    transaction_id: transactionId,
+                    partner_transaction_date: new Date().toISOString(),
+                    currency: booking.currency || market.currency,
+                    amount_paid: booking.totalAmount || 100,
+                    market: market.market,
+                });
+
+                // Reflejar el nuevo balance en el estado de React también
+                if (user && result.newBalance !== null) {
+                    setUser({ ...user, miles_balance: result.newBalance });
+                }
+            }
+        }
+
+        // Persistir el viaje en mock data para "Mis Viajes"
         const newTrip = {
             id: `TRP-${Date.now()}`,
             pnr: pnr,
@@ -47,13 +78,12 @@ export const CheckoutSuccessPage = () => {
             destination: booking.searchConfig?.destination,
             status: 'confirmed',
             departureDate: booking.searchConfig?.departureDate,
-            passengers: booking.passengers.length || 1
+            passengers: booking.passengers.length || 1,
         };
         const activeTrips = JSON.parse(localStorage.getItem('minders_fly_active_trips') || '[]');
         activeTrips.push(newTrip);
         localStorage.setItem('minders_fly_active_trips', JSON.stringify(activeTrips));
 
-        // Clean up 
         return () => clearBooking();
     }, []);
 
@@ -62,7 +92,7 @@ export const CheckoutSuccessPage = () => {
             <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="text-[#17A673]" size={48} />
             </div>
-            
+
             <h1 className="text-3xl font-bold text-[#1B0088] mb-2">¡Tu viaje está confirmado!</h1>
             <p className="text-slate-600 mb-8">Te hemos enviado un correo con todos los detalles a tu email registrado.</p>
 
@@ -95,7 +125,7 @@ export const CheckoutSuccessPage = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <button 
+                <button
                     onClick={() => navigate('/my-trips')}
                     className="flex items-center justify-center gap-2 px-8 py-3 bg-[#1B0088] text-white rounded-full font-bold hover:bg-indigo-900 transition-colors"
                 >
