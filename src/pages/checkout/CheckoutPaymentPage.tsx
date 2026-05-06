@@ -7,12 +7,14 @@ import { errorSimulator } from '../../lib/errorSimulator';
 import { validators } from '../../lib/validators';
 import { formatCardNumber, formatCardExpiry } from '../../lib/formatters';
 import { useFormStarted } from '../../lib/useFormStarted';
+import { useBooking } from '../../context/BookingContext';
+import type { BookingState } from '../../context/BookingContext';
 
 export const CheckoutPaymentPage = () => {
     useFormStarted('Payment Form', 'Checkout');
     const { market } = useMarket();
     const { user } = useUser();
-    const { booking } = useBooking();
+    const { booking, updateBooking } = useBooking();
     const navigate = useNavigate();
 
     const [paymentMethod, setPaymentMethod] = useState(market.payment_methods[0] || 'credit_card');
@@ -27,6 +29,20 @@ export const CheckoutPaymentPage = () => {
     });
 
     useEffect(() => {
+        // Detectar la categoría de producto desde la ruta + datos del booking.
+        // CheckoutPaymentPage se reusa para todos los flujos.
+        const path = window.location.pathname;
+        let productCategory: BookingState['productCategory'] = 'flight';
+        if (path.includes('/cars/checkout')) productCategory = 'car';
+        else if (path.includes('/packages/checkout')) productCategory = 'package';
+        else if (path.includes('/assistance/checkout')) productCategory = 'assistance';
+        else if (path.includes('/hotels/checkout')) productCategory = 'hotel';
+        // Hoteles también navegan a '/checkout/payment'; si no hay vuelo, asumimos hotel
+        else if (!booking.outboundFlight) productCategory = 'hotel';
+
+        if (booking.productCategory !== productCategory) {
+            updateBooking({ productCategory });
+        }
 
         trackEvent('Checkout Payment Viewed', {
             journey_name: 'Checkout',
@@ -35,7 +51,8 @@ export const CheckoutPaymentPage = () => {
             booking_flow_id: booking.bookingFlowId,
             checkout_id: booking.checkoutId,
             market: market.market,
-            currency: market.currency
+            currency: market.currency,
+            product_category: productCategory,
         });
     }, [booking.bookingFlowId, booking.checkoutId, market.market, market.currency]);
 
