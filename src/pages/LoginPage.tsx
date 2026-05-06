@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent, type MouseEvent } from 'react';
 import { trackEvent } from '../lib/amplitude';
 import { useUser, useMarket } from '../context/AppContext';
 import { useNavigate, useLocation } from 'react-router';
@@ -56,12 +56,12 @@ export const LoginPage = () => {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         doLogin(credentials.email, credentials.password);
     };
 
-    const handleQuickLogin = (e: React.MouseEvent) => {
+    const handleQuickLogin = (e: MouseEvent) => {
         e.preventDefault();
         const demoCreds = { email: 'demo@mail.com', password: 'password123' };
         setCredentials(demoCreds);
